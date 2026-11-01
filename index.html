@@ -22,7 +22,7 @@ input,select,textarea,button{font:inherit}input,select{width:100%;min-height:44p
 .filters{display:flex;gap:8px;margin-bottom:10px}.filters select{flex:1}.item{display:flex;gap:10px;align-items:center;padding:13px 0;border-bottom:1px solid var(--line)}.item:last-child{border-bottom:0}.itemmain{flex:1;min-width:0}.itemname{font-weight:650;overflow-wrap:anywhere}.meta{font-size:12px;color:var(--muted);margin-top:5px;display:flex;gap:7px;align-items:center;flex-wrap:wrap}.tag{background:#eef4f0;color:#426057;border-radius:7px;padding:3px 7px}.itemright{text-align:right;white-space:nowrap}.money{font-weight:700;font-variant-numeric:tabular-nums}.actions{display:flex;gap:6px;margin-top:6px;justify-content:flex-end}.actions button{min-height:30px;padding:5px 9px;font-size:12px}.empty{text-align:center;color:var(--muted);padding:25px 8px;font-size:14px}.categoryrow{margin:13px 0}.cathead{display:flex;justify-content:space-between;gap:12px;font-size:13px;margin-bottom:6px}.track{height:7px;border-radius:99px;background:#edf1ee;overflow:hidden}.fill{height:100%;border-radius:99px;background:#39836f}.pct{font-size:11px;color:var(--muted);margin-top:4px}.toolbar{display:flex;flex-wrap:wrap;gap:8px}.toolbar button{flex:1;font-size:13px}.note{font-size:12px;color:var(--muted);line-height:1.6}.toast{position:fixed;bottom:calc(18px + env(safe-area-inset-bottom));left:50%;transform:translateX(-50%);background:#182622;color:white;padding:11px 16px;border-radius:12px;font-size:13px;box-shadow:var(--shadow);display:none;max-width:90%;z-index:10}
 @media(max-width:420px){main{padding:13px 11px 30px}.card{padding:14px}.total{font-size:29px}.formgrid{gap:9px}.itemright .money{font-size:14px}}
 </style>
-<style>.person-totals{display:grid;grid-template-columns:1fr 1fr;gap:9px}.person-total{background:#eef5f1;border-radius:13px;padding:12px}.person-total small{display:block;color:#60736a;font-size:11px}.person-total strong{display:block;font-size:20px;margin-top:4px}.txrow{border:1px solid var(--line);border-radius:13px;padding:11px;margin:9px 0;display:grid;grid-template-columns:1fr 1fr;gap:8px}.txrow .wide{grid-column:1/-1}.txrow label{font-size:11px;color:var(--muted);display:block;margin-bottom:4px}.txrow input,.txrow select{min-height:38px;font-size:13px}.txrow .txremove{grid-column:1/-1;justify-self:end;min-height:30px;padding:4px 10px}.ratio-fields{display:grid;grid-template-columns:1fr 1fr;gap:10px}.pdf-note{font-size:12px;color:var(--muted);line-height:1.65}</style><script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script></head>
+<style>.person-totals{display:grid;grid-template-columns:1fr 1fr;gap:9px}.person-total{background:#eef5f1;border-radius:13px;padding:12px}.person-total small{display:block;color:#60736a;font-size:11px}.person-total strong{display:block;font-size:20px;margin-top:4px}.txrow{border:1px solid var(--line);border-radius:13px;padding:11px;margin:9px 0;display:grid;grid-template-columns:1fr 1fr;gap:8px}.txrow .wide{grid-column:1/-1}.txrow label{font-size:11px;color:var(--muted);display:block;margin-bottom:4px}.txrow input,.txrow select{min-height:38px;font-size:13px}.txrow .txremove{grid-column:1/-1;justify-self:end;min-height:30px;padding:4px 10px}.ratio-fields{display:grid;grid-template-columns:1fr 1fr;gap:10px}.pdf-note{font-size:12px;color:var(--muted);line-height:1.65}</style><script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script><script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script></head>
 <body>
 <header><div class="eyebrow">HOUSEHOLD FINANCE</div><h1>引き落とし管理</h1><p>今月いくら必要？を、ひと目で。</p></header>
 <main>
@@ -138,65 +138,70 @@ if ("serviceWorker" in navigator && location.protocol.startsWith("http")) {
 </script>
 <script>(()=>{const K='shiharai-card-transactions-v1',R='shiharai-card-ratio-v1',C='shiharai-card-labels-v1',P='shiharai-person-names-v1',$=id=>document.getElementById(id);let tx=[],cards=[];try{cards=JSON.parse(localStorage.getItem(C)||'[]')}catch(e){}if(!cards.length)cards=['メインカード'];try{tx=JSON.parse(localStorage.getItem(K)||'[]')}catch(e){}
 let ratio={me:50,wife:50};try{ratio=Object.assign(ratio,JSON.parse(localStorage.getItem(R)||'{}'))}catch(e){}$('meRatio').value=ratio.me;$('wifeRatio').value=ratio.wife;let people={me:'利用者1',wife:'利用者2'};try{people=Object.assign(people,JSON.parse(localStorage.getItem(P)||'{}'))}catch(e){}$('personMe').value=people.me;$('personWife').value=people.wife;function updatePeople(){people.me=$('personMe').value.trim()||'利用者1';people.wife=$('personWife').value.trim()||'利用者2';$('meRatioLabel').textContent=people.me;$('wifeRatioLabel').textContent=people.wife;}updatePeople();$('savePeople').onclick=()=>{updatePeople();localStorage.setItem(P,JSON.stringify(people));render();$('peopleStatus').textContent='表示名をこの端末に保存しました'};const yen=n=>'¥'+Math.round(n||0).toLocaleString('ja-JP'),esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));function cardUI(){ $('cardRegistry').textContent='登録済み：'+cards.join(' ／ '); $('pdfCard').innerHTML=cards.map(c=>`<option value="${esc(c)}">${esc(c)}</option>`).join('');}function calc(){let m=+$('meRatio').value,w=+$('wifeRatio').value,ok=m>=0&&w>=0&&m+w===100,a=0,b=0;tx.forEach(x=>{if(x.who==='me')a+=x.amount;if(x.who==='wife')b+=x.amount;if(x.who==='family'&&ok){a+=x.amount*m/100;b+=x.amount*w/100}});let by={};tx.forEach(x=>by[x.card||'カード未設定']=(by[x.card||'カード未設定']||0)+x.amount);let cardHtml=Object.entries(by).map(([k,v])=>`<p class="pdf-note">${esc(k)}：${yen(v)}</p>`).join('');$('txTotals').innerHTML=`<div class="person-totals"><div class="person-total"><small>${esc(people.me)}が支払う金額</small><strong>${yen(a)}</strong></div><div class="person-total"><small>${esc(people.wife)}が支払う金額</small><strong>${yen(b)}</strong></div></div>${cardHtml}<p class="pdf-note">明細合計 ${yen(tx.reduce((s,x)=>s+x.amount,0))} ・ ${tx.length}件 ${ok?'':'割合の合計を100%にしてください'}</p>`}function render(){$('txList').innerHTML=tx.map((x,i)=>`<div class="txrow" data-i="${i}"><div class="wide"><label>カード</label><select data-k="card">${cards.map(c=>`<option value="${esc(c)}" ${(x.card||cards[0])===c?'selected':''}>${esc(c)}</option>`).join('')}</select></div><div class="wide"><label>利用内容</label><input data-k="name" value="${esc(x.name)}"></div><div><label>利用日</label><input data-k="date" value="${esc(x.date||'')}"></div><div><label>金額（円）</label><input data-k="amount" type="number" min="0" value="${x.amount}"></div><div class="wide"><label>利用者</label><select data-k="who"><option value="me" ${x.who==='me'?'selected':''}>${esc(people.me)}が使った</option><option value="wife" ${x.who==='wife'?'selected':''}>${esc(people.wife)}が使った</option><option value="family" ${x.who==='family'?'selected':''}>家族で使った</option></select></div><button class="danger txremove" data-del="${i}">削除</button></div>`).join('');calc()}$('txList').addEventListener('input',e=>{let r=e.target.closest('.txrow'),k=e.target.dataset.k;if(r&&k){tx[+r.dataset.i][k]=k==='amount'?Math.max(0,+e.target.value||0):e.target.value;calc()}});$('txList').addEventListener('change',e=>{let r=e.target.closest('.txrow'),k=e.target.dataset.k;if(r&&k){tx[+r.dataset.i][k]=k==='amount'?Math.max(0,+e.target.value||0):e.target.value;calc()}});$('txList').addEventListener('click',e=>{let b=e.target.closest('[data-del]');if(b){tx.splice(+b.dataset.del,1);render()}});$('meRatio').addEventListener('input',calc);$('wifeRatio').addEventListener('input',calc);$('addCard').onclick=()=>{let n=$('cardName').value.trim();if(!n)return;if(cards.includes(n)){alert('同じカード名が登録済みです');return}cards.push(n);localStorage.setItem(C,JSON.stringify(cards));$('cardName').value='';cardUI();render()};$('addTx').onclick=()=>{tx.push({name:'',date:'',amount:0,who:'me',card:cards[0]});render()};$('saveTx').onclick=()=>{let m=+$('meRatio').value,w=+$('wifeRatio').value;if(m<0||w<0||m+w!==100){alert('割合の合計を100%にしてください');return}if(tx.some(x=>!x.name.trim()||!Number.isFinite(x.amount)||x.amount<0)){alert('利用内容と金額を確認してください');return}localStorage.setItem(K,JSON.stringify(tx));localStorage.setItem(R,JSON.stringify({me:m,wife:w}));localStorage.setItem(C,JSON.stringify(cards));$('pdfStatus').textContent='利用一覧と割合を端末に保存しました'};$('parsePdf').onclick=async()=>{
- let f=$('pdfFile').files[0];
+ const f=$('pdfFile').files[0];
  if(!f){$('pdfStatus').textContent='PDFを選択してください';return}
- if(!window.pdfjsLib){$('pdfStatus').textContent='PDFライブラリを読み込めません。通信を確認してください';return}
- $('pdfStatus').textContent='解析中…';
+ if(!window.pdfjsLib||!window.Tesseract){$('pdfStatus').textContent='PDF/OCRライブラリを読み込めません。通信を確認してください';return}
+ $('parsePdf').disabled=true;
+ const oldLabel=$('parsePdf').textContent;
+ $('parsePdf').textContent='読み取り中…';
  try{
   pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
   const pdf=await pdfjsLib.getDocument({data:new Uint8Array(await f.arrayBuffer())}).promise;
-  const rows=[];
-  let statementYear=null;
+  const worker=await Tesseract.createWorker('jpn+eng',1,{
+    logger:m=>{if(m.status==='recognizing text')$('pdfStatus').textContent=`OCR処理中… ${Math.round((m.progress||0)*100)}%`}
+  });
+  const found=[];
+  let currentYear=Number(($('month').value||'').slice(0,4))||new Date().getFullYear();
   for(let pn=1;pn<=pdf.numPages;pn++){
-   const page=await pdf.getPage(pn), content=await page.getTextContent();
-   const items=content.items.filter(it=>it.str&&it.str.trim()).map(it=>({
-    text:it.str.trim(), x:it.transform[4], y:it.transform[5]
-   }));
-   // 明細書内の年月日（例：2026 / 10 / 18）から年を取得
-   if(!statementYear){
-    const yearItem=items.find(it=>it.x>330&&it.x<390&&/^20\d{2}$/.test(it.text));
-    if(yearItem)statementYear=Number(yearItem.text);
+   $('pdfStatus').textContent=`${pn}/${pdf.numPages}ページ目を画像認識中…`;
+   const page=await pdf.getPage(pn);
+   const viewport=page.getViewport({scale:2});
+   const canvas=document.createElement('canvas');
+   canvas.width=Math.ceil(viewport.width);canvas.height=Math.ceil(viewport.height);
+   const ctx=canvas.getContext('2d',{willReadFrequently:true});
+   await page.render({canvasContext:ctx,viewport}).promise;
+   // OCR対象をページ全体にし、文字配置を保ったまま読み取る
+   const result=await worker.recognize(canvas);
+   const lines=(result.data.text||'').split(/\r?\n/).map(s=>s.trim()).filter(Boolean);
+   // 明細ページの年月日・金額・利用先を、OCRの行単位で組み立てる
+   let activeDate='';
+   for(const line of lines){
+    const ym=line.match(/(20\d{2})年\s*(\d{1,2})月\s*(\d{1,2})日/);
+    if(ym)currentYear=Number(ym[1]);
+    const dateMatch=line.match(/(?:^|\s)(\d{1,2})\s*月?\s*(\d{1,2})\s*日/);
+    if(dateMatch){
+      const mo=Number(dateMatch[1]),day=Number(dateMatch[2]);
+      if(mo>=1&&mo<=12&&day>=1&&day<=31)activeDate=`${currentYear}/${String(mo).padStart(2,'0')}/${String(day).padStart(2,'0')}`;
+    }
+    // 末尾の金額を抽出。請求合計・返金・調整額は除外
+    const amounts=[...line.matchAll(/(?:¥\s*)?([\d]{1,3}(?:,\d{3})+|[\d]{3,7})\s*$/g)];
+    if(!amounts.length||!activeDate)continue;
+    const amount=Number(amounts[amounts.length-1][1].replace(/,/g,''));
+    if(!(amount>0&&amount<10000000))continue;
+    let merchant=line;
+    merchant=merchant.replace(/(?:^|\s)\d{1,2}\s*月?\s*\d{1,2}\s*日/,' ');
+    merchant=merchant.replace(/(?:¥\s*)?([\d]{1,3}(?:,\d{3})+|[\d]{3,7})\s*$/,'').trim();
+    merchant=merchant.replace(/^[|｜:：\-\s]+|[|｜:：\-\s]+$/g,'').replace(/\s+/g,' ').trim();
+    if(!merchant||/ご利用明細|ご利用額|ご利用金額|今回ご請求|合計|お支払い|ご入金|調整金額|会員番号|明細書作成/.test(merchant))continue;
+    // 会社名・住所等の長い行を除外し、日付付き明細行だけ採用
+    if(merchant.length>90)continue;
+    found.push({name:merchant,date:activeDate,amount,who:'me',card:$('pdfCard').value||cards[0]});
    }
-   // Amexの明細は「月・日」「利用先」「金額」が同じ高さの別カラムに配置される。
-   // y座標で行をまとめ、日付と金額のある行だけを明細候補にする。
-   const buckets=[];
-   items.sort((a,b)=>b.y-a.y||a.x-b.x).forEach(it=>{
-    let row=buckets.find(r=>Math.abs(r.y-it.y)<=2.8);
-    if(!row){row={y:it.y,items:[]};buckets.push(row)}
-    row.items.push(it);
-   });
-   for(const row of buckets){
-    const monthParts=row.items.filter(it=>it.x<22&&/^\d{1,2}$/.test(it.text));
-    const dayParts=row.items.filter(it=>it.x>=22&&it.x<58&&/^\d{1,2}$/.test(it.text));
-    const amountParts=row.items.filter(it=>it.x>450&&/^\s*[\d,]+\s*$/.test(it.text));
-    if(!monthParts.length||!dayParts.length||!amountParts.length)continue;
-    const month=Number(monthParts.sort((a,b)=>a.x-b.x)[0].text);
-    const day=Number(dayParts.sort((a,b)=>a.x-b.x)[0].text);
-    const amountText=amountParts.map(it=>it.text).join('').replace(/\s/g,'');
-    const amount=Number(amountText.replace(/,/g,''));
-    if(!(month>=1&&month<=12&&day>=1&&day<=31&&amount>0&&amount<10000000))continue;
-    const merchant=row.items.filter(it=>it.x>=58&&it.x<390)
-      .sort((a,b)=>a.x-b.x).map(it=>it.text).join(' ')
-      .replace(/\s+/g,' ').trim();
-    if(!merchant||/合計|請求額|支払額|ご利用金額合計|ご利用明細/.test(merchant))continue;
-    const year=statementYear||Number(($('month').value||'').slice(0,4))||new Date().getFullYear();
-    rows.push({name:merchant,date:`${year}/${String(month).padStart(2,'0')}/${String(day).padStart(2,'0')}`,amount,who:'me',card:$('pdfCard').value||cards[0]});
-   }
+   canvas.width=1;canvas.height=1;
   }
-  // ページをまたいだ重複を除外。既存明細との重複も避ける。
-  const unique=[], seen=new Set();
-  for(const x of rows){
-   const key=[x.date,x.amount,x.name,x.card].join('|');
-   if(!seen.has(key)){seen.add(key);unique.push(x)}
-  }
-  const existing=new Set(tx.map(x=>[x.date,x.amount,x.name,x.card||''].join('|')));
-  const add=unique.filter(x=>!existing.has([x.date,x.amount,x.name,x.card||''].join('|')));
+  await worker.terminate();
+  // 重複を除き、同じ日付・金額でも別店舗は残す
+  const seen=new Set(),unique=[];
+  for(const x of found){const k=[x.date,x.amount,x.name].join('|');if(!seen.has(k)){seen.add(k);unique.push(x)}}
+  const add=unique.filter(x=>!tx.some(t=>t.date===x.date&&t.amount===x.amount&&t.name===x.name&&(t.card||cards[0])===x.card));
   tx=tx.concat(add);render();
   const total=add.reduce((s,x)=>s+x.amount,0);
-  $('pdfStatus').textContent=`${pdf.numPages}ページを解析。${add.length}件を抽出（抽出合計 ${yen(total)}）。利用先・日付・金額を必ず確認してください。`;
+  $('pdfStatus').textContent=`${pdf.numPages}ページをOCR解析。${add.length}件を候補として抽出（合計 ${yen(total)}）。OCRの誤読があり得るため、店舗名・日付・金額を原本と照合してください。`;
  }catch(e){
   console.error(e);
-  $('pdfStatus').textContent='読み取れませんでした。PDFの文字情報またはレイアウトを確認してください。';
+  $('pdfStatus').textContent='OCRに失敗しました。通信環境を確認するか、明細を手動追加してください。';
+ }finally{
+  $('parsePdf').disabled=false;$('parsePdf').textContent=oldLabel;
  }
 };cardUI();render()})();</script></body>
 </html>
