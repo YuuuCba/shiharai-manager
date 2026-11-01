@@ -1,0 +1,19 @@
+{
+  "name": "引き落とし管理",
+  "short_name": "引き落とし管理",
+  "description": "毎月の引き落とし予定、固定費、カテゴリ別内訳を管理",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#f4f7f5",
+  "theme_color": "#173f38",
+  "lang": "ja",
+  "icons": [
+    {
+      "src": "./icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}

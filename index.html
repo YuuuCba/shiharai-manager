@@ -1,0 +1,141 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#173f38">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="引き落とし管理">
+<meta name="description" content="毎月の引き落とし予定を手入力で管理する個人用アプリ">
+<link rel="manifest" href="./manifest.json">
+<link rel="apple-touch-icon" href="./icon.svg">
+<title>引き落とし管理</title>
+<style>
+:root{--bg:#f4f7f5;--card:#fff;--ink:#182622;--muted:#6b7974;--line:#e2e9e5;--green:#1d6254;--green2:#e4f2ed;--red:#a33434;--shadow:0 5px 22px #173f380d}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font-family:-apple-system,BlinkMacSystemFont,"Hiragino Sans","Noto Sans JP",sans-serif;padding:env(safe-area-inset-top) 0 env(safe-area-inset-bottom)}
+header{background:#173f38;color:white;padding:20px 18px 23px;border-radius:0 0 24px 24px}header .eyebrow{font-size:12px;opacity:.78;letter-spacing:.08em}header h1{font-size:24px;margin:5px 0 3px}header p{font-size:13px;margin:0;opacity:.82}
+main{max-width:760px;margin:auto;padding:16px 14px 38px}.monthbar{display:flex;align-items:center;gap:10px;margin:0 0 14px}.monthbar label{font-size:13px;color:var(--muted);white-space:nowrap}.monthbar input{flex:1}
+input,select,textarea,button{font:inherit}input,select{width:100%;min-height:44px;padding:10px 12px;border:1px solid #d6e0da;border-radius:12px;background:white;color:var(--ink)}input[type=checkbox]{width:19px;min-height:auto;accent-color:var(--green)}
+.summary{background:var(--green);color:white;border-radius:20px;padding:19px;margin-bottom:14px;box-shadow:var(--shadow)}.summary .label{font-size:13px;opacity:.82}.total{font-size:32px;font-weight:750;letter-spacing:-.04em;margin:5px 0 14px;font-variant-numeric:tabular-nums}.stats{display:grid;grid-template-columns:1fr 1fr;gap:10px}.stat{background:#ffffff18;border-radius:12px;padding:10px 12px}.stat small{display:block;opacity:.8;font-size:11px}.stat strong{font-size:16px;display:block;margin-top:3px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:16px;margin-bottom:14px;box-shadow:var(--shadow)}.card h2{font-size:17px;margin:0 0 14px}.formgrid{display:grid;grid-template-columns:1fr 1fr;gap:11px}.field{display:flex;flex-direction:column;gap:6px}.field label{font-size:12px;color:var(--muted)}.wide{grid-column:1/-1}.checkrow{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--muted);padding:2px 0}.primary,button{border:0;border-radius:12px;min-height:43px;padding:10px 14px;cursor:pointer}.primary{background:var(--green);color:white;font-weight:650;width:100%;margin-top:12px}.secondary{background:var(--green2);color:var(--green);font-weight:600}.danger{background:#fff0f0;color:var(--red)}.subtle{background:#f0f3f1;color:#34443e}
+.filters{display:flex;gap:8px;margin-bottom:10px}.filters select{flex:1}.item{display:flex;gap:10px;align-items:center;padding:13px 0;border-bottom:1px solid var(--line)}.item:last-child{border-bottom:0}.itemmain{flex:1;min-width:0}.itemname{font-weight:650;overflow-wrap:anywhere}.meta{font-size:12px;color:var(--muted);margin-top:5px;display:flex;gap:7px;align-items:center;flex-wrap:wrap}.tag{background:#eef4f0;color:#426057;border-radius:7px;padding:3px 7px}.itemright{text-align:right;white-space:nowrap}.money{font-weight:700;font-variant-numeric:tabular-nums}.actions{display:flex;gap:6px;margin-top:6px;justify-content:flex-end}.actions button{min-height:30px;padding:5px 9px;font-size:12px}.empty{text-align:center;color:var(--muted);padding:25px 8px;font-size:14px}.categoryrow{margin:13px 0}.cathead{display:flex;justify-content:space-between;gap:12px;font-size:13px;margin-bottom:6px}.track{height:7px;border-radius:99px;background:#edf1ee;overflow:hidden}.fill{height:100%;border-radius:99px;background:#39836f}.pct{font-size:11px;color:var(--muted);margin-top:4px}.toolbar{display:flex;flex-wrap:wrap;gap:8px}.toolbar button{flex:1;font-size:13px}.note{font-size:12px;color:var(--muted);line-height:1.6}.toast{position:fixed;bottom:calc(18px + env(safe-area-inset-bottom));left:50%;transform:translateX(-50%);background:#182622;color:white;padding:11px 16px;border-radius:12px;font-size:13px;box-shadow:var(--shadow);display:none;max-width:90%;z-index:10}
+@media(max-width:420px){main{padding:13px 11px 30px}.card{padding:14px}.total{font-size:29px}.formgrid{gap:9px}.itemright .money{font-size:14px}}
+</style>
+<style>.person-totals{display:grid;grid-template-columns:1fr 1fr;gap:9px}.person-total{background:#eef5f1;border-radius:13px;padding:12px}.person-total small{display:block;color:#60736a;font-size:11px}.person-total strong{display:block;font-size:20px;margin-top:4px}.txrow{border:1px solid var(--line);border-radius:13px;padding:11px;margin:9px 0;display:grid;grid-template-columns:1fr 1fr;gap:8px}.txrow .wide{grid-column:1/-1}.txrow label{font-size:11px;color:var(--muted);display:block;margin-bottom:4px}.txrow input,.txrow select{min-height:38px;font-size:13px}.txrow .txremove{grid-column:1/-1;justify-self:end;min-height:30px;padding:4px 10px}.ratio-fields{display:grid;grid-template-columns:1fr 1fr;gap:10px}.pdf-note{font-size:12px;color:var(--muted);line-height:1.65}</style><script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script></head>
+<body>
+<header><div class="eyebrow">HOUSEHOLD FINANCE</div><h1>引き落とし管理</h1><p>今月いくら必要？を、ひと目で。</p></header>
+<main>
+  <div class="monthbar"><label for="month">集計する月</label><input id="month" type="month"></div>
+  <section class="summary">
+    <div class="label">今月の引き落とし予定合計</div><div class="total" id="total">¥0</div>
+    <div class="stats"><div class="stat"><small>登録件数</small><strong id="count">0件</strong></div><div class="stat"><small>支払い済み</small><strong id="paid">¥0</strong></div></div>
+  </section>
+  <section class="card">
+    <h2 id="formTitle">＋ 引き落としを追加</h2>
+    <form id="entryForm">
+      <div class="formgrid">
+        <div class="field wide"><label for="name">項目名</label><input id="name" required maxlength="80" placeholder="例：楽天カード、電気代"></div>
+        <div class="field"><label for="amount">金額（円）</label><input id="amount" required type="number" min="1" max="999999999" step="1" inputmode="numeric" placeholder="45000"></div>
+        <div class="field"><label for="category">カテゴリ</label><select id="category"></select></div>
+        <div class="field"><label for="day">引き落とし日</label><input id="day" type="number" min="1" max="31" value="27" required></div>
+        <div class="field"><label for="kind">登録タイプ</label><select id="kind"><option value="once">この月だけ</option><option value="recurring">毎月の固定費</option></select></div>
+        <div class="field wide"><label class="checkrow"><input id="isPaid" type="checkbox"> この月は支払い済み</label></div>
+      </div>
+      <button class="primary" id="submitBtn" type="submit">登録する</button>
+      <button class="subtle" id="cancelEdit" type="button" style="display:none;width:100%;margin-top:8px">編集をキャンセル</button>
+    </form>
+  </section>
+  <section class="card">
+    <h2>明細一覧</h2>
+    <div class="filters"><select id="filterCat" aria-label="カテゴリで絞り込み"></select><select id="filterStatus" aria-label="支払い状況"><option value="all">すべての状況</option><option value="unpaid">未払い</option><option value="paid">支払い済み</option></select></div>
+    <div id="items"></div>
+  </section>
+  <section class="card">
+    <h2>カテゴリ別内訳</h2><div id="breakdown"></div>
+  </section>
+  <section class="card" id="peopleSettings"><h2>利用者の設定</h2><p class="pdf-note">ここで設定した名前が、明細の利用者表示や負担額の集計に反映されます。</p><div class="formgrid"><div class="field"><label for="personMe">利用者1の表示名</label><input id="personMe" maxlength="30" placeholder="例：自分"></div><div class="field"><label for="personWife">利用者2の表示名</label><input id="personWife" maxlength="30" placeholder="例：家族"></div></div><button type="button" class="primary" id="savePeople">表示名を保存</button><p class="pdf-note" id="peopleStatus" aria-live="polite"></p></section>
+  <section class="card" id="cardPdfSection"><h2>クレジットカード明細（PDF）</h2><p class="pdf-note">PDFの文字を端末内で読み取り、利用一覧の候補を作成します。結果は必ず確認・修正してください。</p><div class="field"><label for="cardName">カード名（登録・編集）</label><input id="cardName" placeholder="例：メインカード"></div><div class="toolbar"><button type="button" class="secondary" id="addCard">カードを登録</button></div><div id="cardRegistry" class="pdf-note"></div><div class="field"><label for="pdfCard">今回読み込むカード</label><select id="pdfCard"></select></div><div class="field"><label for="pdfFile">利用明細PDF</label><input id="pdfFile" type="file" accept="application/pdf,.pdf"></div><button class="primary" type="button" id="parsePdf">PDFを読み込む</button><div id="pdfStatus" class="pdf-note" aria-live="polite"></div><div class="ratio-fields"><div class="field"><label for="meRatio"><span id="meRatioLabel">利用者1</span>の負担割合（%）</label><input id="meRatio" type="number" min="0" max="100" value="50"></div><div class="field"><label for="wifeRatio"><span id="wifeRatioLabel">利用者2</span>の負担割合（%）</label><input id="wifeRatio" type="number" min="0" max="100" value="50"></div></div><p class="pdf-note">家族利用分をこの割合で分割。合計100%に設定してください。</p><div id="txTotals"></div><div id="txList"></div><div class="toolbar"><button type="button" class="secondary" id="addTx">＋ 明細を手動追加</button><button type="button" class="primary" id="saveTx">利用一覧を保存</button></div><p class="pdf-note">画像スキャンPDF、暗号化PDF、特殊レイアウトは読み取れない場合があります。抽出結果は必ず照合してください。</p></section>
+<section class="card">
+    <h2>データのバックアップ</h2>
+    <p class="note">データはこのiPhoneのブラウザ内に保存されます。機種変更やブラウザのデータ消去に備え、定期的にバックアップを保存してください。自動で銀行・カード口座へ接続する機能や、家族間の同期はありません。</p>
+    <div class="toolbar"><button class="secondary" id="exportBtn">バックアップを書き出す</button><button class="secondary" id="importBtn">バックアップを読み込む</button><input id="importFile" type="file" accept="application/json,.json" hidden></div>
+    <p class="note" style="margin-top:12px">このアプリは手入力用です。銀行の正式な引き落とし確定額ではなく、登録した予定の合計を表示します。</p>
+  </section>
+</main><div class="toast" id="toast" role="status"></div>
+<script>
+(()=> {
+'use strict';
+const KEY='shiharai-manager-v1';
+const CATS=['カード','住宅・家賃','光熱費','通信費','保険','ローン','サブスク','食費','交通費','税金','その他'];
+const $=id=>document.getElementById(id);
+const now=new Date();
+const thisMonth=`${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
+$('month').value=thisMonth;
+let entries=[], editId=null;
+const yen=n=>'¥'+Math.round(n).toLocaleString('ja-JP');
+const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,9);
+function monthShift(m,delta){const [y,mo]=m.split('-').map(Number);const d=new Date(y,mo-1+delta,1);return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`}
+function read(){try{const raw=localStorage.getItem(KEY);if(raw){const data=JSON.parse(raw);if(Array.isArray(data))entries=data.filter(validEntry)}}catch(e){notify('保存データを読み込めませんでした。バックアップがあれば復元してください。')}}
+function save(){try{localStorage.setItem(KEY,JSON.stringify(entries));return true}catch(e){notify('保存できません。端末の空き容量やブラウザ設定を確認してください。');return false}}
+function validEntry(x){return x&&typeof x.id==='string'&&typeof x.name==='string'&&Number.isFinite(x.amount)&&x.amount>0&&/^\d{4}-\d{2}$/.test(x.month)&&CATS.includes(x.category)&&Number.isInteger(x.day)&&x.day>=1&&x.day<=31}
+function notify(msg){const t=$('toast');t.textContent=msg;t.style.display='block';clearTimeout(notify.timer);notify.timer=setTimeout(()=>t.style.display='none',2800)}
+function escapeHtml(s){return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
+function setupSelects(){
+  $('category').innerHTML=CATS.map(c=>`<option>${c}</option>`).join('');
+  $('filterCat').innerHTML='<option value="all">すべてのカテゴリ</option>'+CATS.map(c=>`<option value="${c}">${c}</option>`).join('');
+}
+function monthEntries(){return entries.filter(e=>e.month===$('month').value)}
+function render(){
+ const all=monthEntries(), total=all.reduce((s,e)=>s+e.amount,0), paid=all.filter(e=>e.paid).reduce((s,e)=>s+e.amount,0);
+ $('total').textContent=yen(total);$('count').textContent=all.length+'件';$('paid').textContent=yen(paid);
+ const cat=$('filterCat').value,status=$('filterStatus').value;
+ const shown=all.filter(e=>(cat==='all'||e.category===cat)&&(status==='all'||(status==='paid'?e.paid:!e.paid))).sort((a,b)=>a.day-b.day||a.name.localeCompare(b.name,'ja'));
+ $('items').innerHTML=shown.length?shown.map(e=>`<div class="item"><div class="itemmain"><div class="itemname">${escapeHtml(e.name)}</div><div class="meta"><span class="tag">${escapeHtml(e.category)}</span><span>${e.day}日</span><span>${e.recurring?'毎月固定費':'単月'}</span><span>${e.paid?'支払い済み':'未払い'}</span></div></div><div class="itemright"><div class="money">${yen(e.amount)}</div><div class="actions"><button class="secondary" data-act="toggle" data-id="${e.id}">${e.paid?'未払いに戻す':'支払い済み'}</button><button class="subtle" data-act="edit" data-id="${e.id}">編集</button><button class="danger" data-act="delete" data-id="${e.id}">削除</button></div></div></div>`).join(''):'<div class="empty">この月の明細はまだありません。上から追加してね。</div>';
+ const cats=CATS.map(c=>({c,v:all.filter(e=>e.category===c).reduce((s,e)=>s+e.amount,0)})).filter(x=>x.v>0).sort((a,b)=>b.v-a.v);
+ $('breakdown').innerHTML=cats.length?cats.map(x=>`<div class="categoryrow"><div class="cathead"><span>${escapeHtml(x.c)}</span><strong>${yen(x.v)}</strong></div><div class="track"><div class="fill" style="width:${total?x.v/total*100:0}%"></div></div><div class="pct">${total?(x.v/total*100).toFixed(1):'0.0'}% ・ ${all.filter(e=>e.category===x.c).length}件</div></div>`).join(''):'<div class="empty">登録すると自動で内訳が表示されます。</div>';
+}
+function resetForm(){editId=null;$('entryForm').reset();$('day').value=27;$('formTitle').textContent='＋ 引き落としを追加';$('submitBtn').textContent='登録する';$('cancelEdit').style.display='none'}
+$('entryForm').addEventListener('submit',ev=>{
+ ev.preventDefault();const name=$('name').value.trim(),amount=Number($('amount').value),day=Number($('day').value),month=$('month').value;
+ if(!name||!Number.isSafeInteger(amount)||amount<1||amount>999999999||!Number.isInteger(day)||day<1||day>31||!/^\d{4}-\d{2}$/.test(month)){notify('項目名・金額・日付を確認してください');return}
+ const category=$('category').value,recurring=$('kind').value==='recurring',paid=$('isPaid').checked;
+ if(editId){const old=entries.find(e=>e.id===editId);if(old){Object.assign(old,{name,amount,day,category,paid});}save();resetForm();render();notify('明細を更新しました');return}
+ if(recurring){
+   // A recurring series gets its own series ID so future instances can be managed separately.
+   const seriesId=uid();
+   for(let i=0;i<24;i++){const m=monthShift(month,i);if(!entries.some(e=>e.seriesId===seriesId&&e.month===m))entries.push({id:uid(),seriesId,name,amount,day,category,month:m,paid:i===0?paid:false,recurring:true})}
+ } else entries.push({id:uid(),name,amount,day,category,month,paid,recurring:false});
+ save();resetForm();render();notify(recurring?'固定費を24か月分登録しました':'明細を登録しました');
+});
+$('cancelEdit').addEventListener('click',resetForm);
+$('items').addEventListener('click',ev=>{
+ const b=ev.target.closest('button[data-act]');if(!b)return;const e=entries.find(x=>x.id===b.dataset.id);if(!e)return;
+ if(b.dataset.act==='toggle'){e.paid=!e.paid;save();render();return}
+ if(b.dataset.act==='edit'){editId=e.id;$('name').value=e.name;$('amount').value=e.amount;$('category').value=e.category;$('day').value=e.day;$('kind').value=e.recurring?'recurring':'once';$('isPaid').checked=e.paid;$('formTitle').textContent='明細を編集';$('submitBtn').textContent='変更を保存';$('cancelEdit').style.display='block';window.scrollTo({top:0,behavior:'smooth'});return}
+ if(b.dataset.act==='delete'&&confirm(`「${e.name}」を削除しますか？${e.recurring?'\\nこの月の明細のみ削除します。':''}`)){entries=entries.filter(x=>x.id!==e.id);save();render();notify('削除しました')}
+});
+$('month').addEventListener('change',render);$('filterCat').addEventListener('change',render);$('filterStatus').addEventListener('change',render);
+$('exportBtn').addEventListener('click',()=>{
+ const blob=new Blob([JSON.stringify({format:'shiharai-manager-backup',version:1,exportedAt:new Date().toISOString(),entries,cardTransactions:JSON.parse(localStorage.getItem('shiharai-card-transactions-v1')||'[]'),cardRatio:JSON.parse(localStorage.getItem('shiharai-card-ratio-v1')||'{\"me\":50,\"wife\":50}'),cardLabels:JSON.parse(localStorage.getItem('shiharai-card-labels-v1')||'[]')},null,2)],{type:'application/json'});
+ const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=`引き落とし管理_backup_${thisMonth}.json`;a.click();URL.revokeObjectURL(url);notify('バックアップを書き出しました');
+});
+$('importBtn').addEventListener('click',()=>$('importFile').click());
+$('importFile').addEventListener('change',async ev=>{
+ const f=ev.target.files[0];if(!f)return;
+ try{const d=JSON.parse(await f.text()),arr=Array.isArray(d)?d:d.entries;if(!Array.isArray(arr)||!arr.every(validEntry))throw Error('invalid');
+ if(!confirm(`バックアップの${arr.length}件を読み込みます。既存データに追加し、同じIDは置き換えます。続けますか？`))return;
+ const map=new Map(entries.map(e=>[e.id,e]));arr.forEach(e=>map.set(e.id,e));entries=[...map.values()];save();if(Array.isArray(d.cardTransactions))localStorage.setItem('shiharai-card-transactions-v1',JSON.stringify(d.cardTransactions));if(d.cardRatio&&typeof d.cardRatio==='object')localStorage.setItem('shiharai-card-ratio-v1',JSON.stringify(d.cardRatio));if(Array.isArray(d.cardLabels))localStorage.setItem('shiharai-card-labels-v1',JSON.stringify(d.cardLabels));render();notify('バックアップを読み込みました。PDF明細も復元しました')
+ }catch(e){notify('読み込めません。正しいバックアップJSONを選んでください')}finally{ev.target.value=''}
+});
+setupSelects();read();render();
+})();
+</script>
+<script>
+if ("serviceWorker" in navigator && location.protocol.startsWith("http")) {
+  window.addEventListener("load", () => navigator.serviceWorker.register("./sw.js").catch(() => {}));
+}
+</script>
+<script>(()=>{const K='shiharai-card-transactions-v1',R='shiharai-card-ratio-v1',C='shiharai-card-labels-v1',P='shiharai-person-names-v1',$=id=>document.getElementById(id);let tx=[],cards=[];try{cards=JSON.parse(localStorage.getItem(C)||'[]')}catch(e){}if(!cards.length)cards=['メインカード'];try{tx=JSON.parse(localStorage.getItem(K)||'[]')}catch(e){}
+let ratio={me:50,wife:50};try{ratio=Object.assign(ratio,JSON.parse(localStorage.getItem(R)||'{}'))}catch(e){}$('meRatio').value=ratio.me;$('wifeRatio').value=ratio.wife;let people={me:'利用者1',wife:'利用者2'};try{people=Object.assign(people,JSON.parse(localStorage.getItem(P)||'{}'))}catch(e){}$('personMe').value=people.me;$('personWife').value=people.wife;function updatePeople(){people.me=$('personMe').value.trim()||'利用者1';people.wife=$('personWife').value.trim()||'利用者2';$('meRatioLabel').textContent=people.me;$('wifeRatioLabel').textContent=people.wife;}updatePeople();$('savePeople').onclick=()=>{updatePeople();localStorage.setItem(P,JSON.stringify(people));render();$('peopleStatus').textContent='表示名をこの端末に保存しました'};const yen=n=>'¥'+Math.round(n||0).toLocaleString('ja-JP'),esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));function cardUI(){ $('cardRegistry').textContent='登録済み：'+cards.join(' ／ '); $('pdfCard').innerHTML=cards.map(c=>`<option value="${esc(c)}">${esc(c)}</option>`).join('');}function calc(){let m=+$('meRatio').value,w=+$('wifeRatio').value,ok=m>=0&&w>=0&&m+w===100,a=0,b=0;tx.forEach(x=>{if(x.who==='me')a+=x.amount;if(x.who==='wife')b+=x.amount;if(x.who==='family'&&ok){a+=x.amount*m/100;b+=x.amount*w/100}});let by={};tx.forEach(x=>by[x.card||'カード未設定']=(by[x.card||'カード未設定']||0)+x.amount);let cardHtml=Object.entries(by).map(([k,v])=>`<p class="pdf-note">${esc(k)}：${yen(v)}</p>`).join('');$('txTotals').innerHTML=`<div class="person-totals"><div class="person-total"><small>${esc(people.me)}が支払う金額</small><strong>${yen(a)}</strong></div><div class="person-total"><small>${esc(people.wife)}が支払う金額</small><strong>${yen(b)}</strong></div></div>${cardHtml}<p class="pdf-note">明細合計 ${yen(tx.reduce((s,x)=>s+x.amount,0))} ・ ${tx.length}件 ${ok?'':'割合の合計を100%にしてください'}</p>`}function render(){$('txList').innerHTML=tx.map((x,i)=>`<div class="txrow" data-i="${i}"><div class="wide"><label>カード</label><select data-k="card">${cards.map(c=>`<option value="${esc(c)}" ${(x.card||cards[0])===c?'selected':''}>${esc(c)}</option>`).join('')}</select></div><div class="wide"><label>利用内容</label><input data-k="name" value="${esc(x.name)}"></div><div><label>利用日</label><input data-k="date" value="${esc(x.date||'')}"></div><div><label>金額（円）</label><input data-k="amount" type="number" min="0" value="${x.amount}"></div><div class="wide"><label>利用者</label><select data-k="who"><option value="me" ${x.who==='me'?'selected':''}>${esc(people.me)}が使った</option><option value="wife" ${x.who==='wife'?'selected':''}>${esc(people.wife)}が使った</option><option value="family" ${x.who==='family'?'selected':''}>家族で使った</option></select></div><button class="danger txremove" data-del="${i}">削除</button></div>`).join('');calc()}$('txList').addEventListener('input',e=>{let r=e.target.closest('.txrow'),k=e.target.dataset.k;if(r&&k){tx[+r.dataset.i][k]=k==='amount'?Math.max(0,+e.target.value||0):e.target.value;calc()}});$('txList').addEventListener('change',e=>{let r=e.target.closest('.txrow'),k=e.target.dataset.k;if(r&&k){tx[+r.dataset.i][k]=k==='amount'?Math.max(0,+e.target.value||0):e.target.value;calc()}});$('txList').addEventListener('click',e=>{let b=e.target.closest('[data-del]');if(b){tx.splice(+b.dataset.del,1);render()}});$('meRatio').addEventListener('input',calc);$('wifeRatio').addEventListener('input',calc);$('addCard').onclick=()=>{let n=$('cardName').value.trim();if(!n)return;if(cards.includes(n)){alert('同じカード名が登録済みです');return}cards.push(n);localStorage.setItem(C,JSON.stringify(cards));$('cardName').value='';cardUI();render()};$('addTx').onclick=()=>{tx.push({name:'',date:'',amount:0,who:'me',card:cards[0]});render()};$('saveTx').onclick=()=>{let m=+$('meRatio').value,w=+$('wifeRatio').value;if(m<0||w<0||m+w!==100){alert('割合の合計を100%にしてください');return}if(tx.some(x=>!x.name.trim()||!Number.isFinite(x.amount)||x.amount<0)){alert('利用内容と金額を確認してください');return}localStorage.setItem(K,JSON.stringify(tx));localStorage.setItem(R,JSON.stringify({me:m,wife:w}));localStorage.setItem(C,JSON.stringify(cards));$('pdfStatus').textContent='利用一覧と割合を端末に保存しました'};$('parsePdf').onclick=async()=>{let f=$('pdfFile').files[0];if(!f){$('pdfStatus').textContent='PDFを選択してください';return}if(!window.pdfjsLib){$('pdfStatus').textContent='PDFライブラリを読み込めません。通信を確認してください';return}$('pdfStatus').textContent='解析中…';try{pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';let pdf=await pdfjsLib.getDocument({data:new Uint8Array(await f.arrayBuffer())}).promise,lines=[];for(let n=1;n<=pdf.numPages;n++){let c=await(await pdf.getPage(n)).getTextContent(),its=c.items.sort((a,b)=>Math.round(b.transform[5])-Math.round(a.transform[5])||a.transform[4]-b.transform[4]),y=null,line='';for(let it of its){let yy=Math.round(it.transform[5]);if(y!==null&&Math.abs(yy-y)>3){if(line.trim())lines.push(line.trim());line=''}y=yy;line+=(line?' ':'')+it.str}if(line.trim())lines.push(line.trim())}let add=[];for(let l of lines){let d=l.match(/(?:20\d{2}[\/.-])?\d{1,2}[\/.-]\d{1,2}/),a=[...l.matchAll(/(?:¥|￥)?\s*\d{1,3}(?:,\d{3})+(?:\.\d+)?|(?:¥|￥)\s*\d+/g)];if(!d||!a.length)continue;let raw=a.at(-1)[0],v=Number(raw.replace(/[¥￥,\s]/g,''));if(!(v>0))continue;let name=l.replace(d[0],' ').replace(raw,' ').replace(/\s+/g,' ').trim();if(!name||/合計|請求額|支払額|ご利用金額合計/.test(name))continue;let date=d[0].replace(/[.-]/g,'/');if(!date.startsWith('20'))date=$('month').value.slice(0,4)+'/'+date;add.push({name,date,amount:Math.round(v),who:'me',card:$('pdfCard').value||cards[0]})}let seen=new Set(tx.map(x=>[x.name,x.date,x.amount,x.card||''].join('|')));add=add.filter(x=>!seen.has([x.name,x.date,x.amount,x.card||''].join('|')));tx=tx.concat(add);render();$('pdfStatus').textContent=`${pdf.numPages}ページから${add.length}件を抽出。内容・金額・利用者を確認してください`}catch(e){$('pdfStatus').textContent='読み取れません。画像スキャン・暗号化PDFなどの可能性があります'}};cardUI();render()})();</script></body>
+</html>
