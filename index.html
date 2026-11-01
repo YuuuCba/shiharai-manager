@@ -174,42 +174,44 @@ let ratio={me:50,wife:50};try{ratio=Object.assign(ratio,JSON.parse(localStorage.
     const status=(lineObj.confidence>=82&&nameOk)?'confirmed':'review';
     found.push({name:nameOk?merchant:'店舗名未読取',date,amount,who:'me',card:$('pdfCard').value||cards[0],status,ocrConfidence:Math.round(lineObj.confidence)});
    }
-   // PDFの文字レイヤーから「日付＋金額」の行を別途検出する。
-   // 全ページOCRが店舗名の行を落としても、明細行そのものを取りこぼさないための補完。
-   const textContent=await page.getTextContent();
-   const items=(textContent.items||[]).filter(it=>it.str&&it.str.trim()).map(it=>({
-    str:it.str.trim(),x:Number(it.transform&&it.transform[4]||0),y:Number(it.transform&&it.transform[5]||0)
-   }));
-   const amountItems=items.filter(it=>it.x>490&&/^[¥￥]?\s*[0-9][0-9,，.]*$/.test(it.str));
-   const rowOccurrences={};
-   for(const amtItem of amountItems){
-    const amount=Number(amtItem.str.replace(/[¥￥,，.\s]/g,''));
-    if(!(amount>0&&amount<10000000))continue;
-    const near=items.filter(it=>Math.abs(it.y-amtItem.y)<2.8);
-    const monthItem=near.find(it=>it.x<25&&/^\d{1,2}$/.test(it.str));
-    const dayItem=near.find(it=>it.x>=25&&it.x<60&&/^\d{1,2}$/.test(it.str));
-    if(!monthItem||!dayItem)continue;
-    const mo=Number(monthItem.str),day=Number(dayItem.str);
-    if(mo<1||mo>12||day<1||day>31)continue;
-    const date=`${currentYear}/${String(mo).padStart(2,'0')}/${String(day).padStart(2,'0')}`;
-    const pairKey=date+'|'+amount;rowOccurrences[pairKey]=(rowOccurrences[pairKey]||0)+1;
-    const already=found.filter(x=>x.date===date&&x.amount===amount).length;
-    if(already>=rowOccurrences[pairKey])continue;
-    // 座標で該当行の店舗名だけを切り出してOCR。全ページの行認識に依存しない。
-    const point=viewport.convertToViewportPoint(0,amtItem.y);
-    const crop=document.createElement('canvas');crop.width=Math.round(420*viewport.scale);crop.height=Math.round(17*viewport.scale);
-    const cy=Math.max(0,Math.min(canvas.height-crop.height,Math.round(point[1]-14*viewport.scale)));
-    crop.getContext('2d').drawImage(canvas,Math.round(60*viewport.scale),cy,crop.width,crop.height,0,0,crop.width,crop.height);
-    let merchant='店舗名未読取',merchantConfidence=0;
-    try{
-     const mr=await worker.recognize(crop);
-     const lines=(mr.data.lines||[]).map(l=>(l.text||'').trim()).filter(Boolean);
-     const raw=(lines[0]||mr.data.text||'').split(/\r?\n/)[0].trim();
-     const cleaned=raw.replace(/[|｜:：]+/g,' ').replace(/\s+/g,' ').trim();
-     if(cleaned.length>1&&cleaned.length<=80){merchant=cleaned;merchantConfidence=Number(mr.data.confidence)||0;}
-    }catch(e){}
-    found.push({name:merchant,date,amount,who:'me',card:$('pdfCard').value||cards[0],status:'review',ocrConfidence:Math.round(merchantConfidence),source:'text-layer-fallback'});
-    crop.width=1;crop.height=1;
+   // v5の通常OCRで拾えなかった明細だけを、PDF文字レイヤーで狭く補完する。
+   // Amexの明細表がある先頭3ページ・明細欄の縦範囲に限定し、-200等の返金行は除外。
+   if(pn<=3){
+    const textContent=await page.getTextContent();
+    const items=(textContent.items||[]).filter(it=>it.str&&it.str.trim()).map(it=>({
+     str:it.str.trim(),x:Number(it.transform&&it.transform[4]||0),y:Number(it.transform&&it.transform[5]||0)
+    }));
+    const tableY=(y)=>pn===1?(y>=410&&y<=535):(pn===2?(y>=155&&y<=520):(y>=155&&y<=280));
+    const amountItems=items.filter(it=>it.x>=515&&it.x<=560&&tableY(it.y)&&/^[0-9][0-9,，.]*$/.test(it.str));
+    for(const amtItem of amountItems){
+     const amount=Number(amtItem.str.replace(/[,，.]/g,''));
+     if(!(amount>=100&&amount<10000000))continue;
+     const near=items.filter(it=>Math.abs(it.y-amtItem.y)<2.5);
+     // 金額の左隣にマイナス記号がある返金・調整行は明細にしない。
+     if(near.some(it=>it.x>=505&&it.x<amtItem.x&&/^[-−ー]$/.test(it.str)))continue;
+     const monthItem=near.find(it=>it.x>=5&&it.x<12&&/^\d{1,2}$/.test(it.str));
+     const dayItem=near.find(it=>it.x>=22&&it.x<36&&/^\d{1,2}$/.test(it.str));
+     if(!monthItem||!dayItem)continue;
+     const mo=Number(monthItem.str),day=Number(dayItem.str);
+     if(mo<1||mo>12||day<1||day>31)continue;
+     const date=`${currentYear}/${String(mo).padStart(2,'0')}/${String(day).padStart(2,'0')}`;
+     // 同じ日付・金額が通常OCRですでに取れている場合は追加しない。
+     if(found.some(x=>x.date===date&&x.amount===amount))continue;
+     const point=viewport.convertToViewportPoint(0,amtItem.y);
+     const crop=document.createElement('canvas');
+     crop.width=Math.round(420*viewport.scale);crop.height=Math.round(20*viewport.scale);
+     const cy=Math.max(0,Math.min(canvas.height-crop.height,Math.round(point[1]-15*viewport.scale)));
+     crop.getContext('2d').drawImage(canvas,Math.round(60*viewport.scale),cy,crop.width,crop.height,0,0,crop.width,crop.height);
+     let merchant='店舗名未読取',merchantConfidence=0;
+     try{
+      const mr=await worker.recognize(crop);
+      const raw=(mr.data.text||'').split(/\r?\n/).map(v=>v.trim()).filter(Boolean)[0]||'';
+      const cleaned=raw.replace(/[|｜:：]+/g,' ').replace(/\s+/g,' ').trim();
+      if(cleaned.length>1&&cleaned.length<=80){merchant=cleaned;merchantConfidence=Number(mr.data.confidence)||0;}
+     }catch(e){}
+     found.push({name:merchant,date,amount,who:'me',card:$('pdfCard').value||cards[0],status:'review',ocrConfidence:Math.round(merchantConfidence),source:'narrow-row-fallback'});
+     crop.width=1;crop.height=1;
+    }
    }
    canvas.width=1;canvas.height=1;
   }
